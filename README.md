@@ -1,7 +1,9 @@
 # Comparing Three Language Models on Tiny Shakespeare
 
 **Author:** Wei Dong
-**Course:** AAI 6620 Applied NLP, Fall 2026, Northeastern University
+
+**Course:** AAI 6620 Applied NLP, Fall 2026
+
 **Task:** Character-level next-token prediction
 
 This project compares a bigram model, an LSTM, and a small Transformer on the same task: given the previous characters, predict the next one. The goal isn't to build the strongest model possible. It's to see how each architecture uses context, how that changes the results, and what attention actually adds.
