@@ -13,11 +13,12 @@ This project compares a bigram model, an LSTM, and a small Transformer on the sa
 ```
 aai6620-midterm-three-models/
 ├── README.md
-├── aai6620_midterm_three_models.ipynb   # all code, outputs, and analysis
+├── aai6620_midterm_three_models.ipynb         # all code, outputs, and analysis
+├── aai6620_practice_reimplementation.ipynb    # my own rewrite of every core component
 ├── ai_use_summary.md
 ├── results/
-│   ├── results.json                     # losses, training times, loss curves for every run
-│   └── samples.json                     # generated text from every model
+│   ├── results.json                           # losses, training times, loss curves for every run
+│   └── samples.json                           # generated text from every model
 └── figures/
     ├── loss_curves.png
     ├── attention_layer1.png
@@ -93,7 +94,7 @@ Training time only counts the actual training steps, not the time spent on evalu
 | LSTM (15k steps)        | 946,625  |        1.000 |      1.580 |           1.484 |           0.581 |               405.6 | High           | Clear overfitting; val loss rises after step 4000 |
 | Transformer (15k steps) | 824,897  |        1.246 |      1.497 |           1.497 |           0.251 |               561.3 | High           | Keeps improving; train/val gap stays small        |
 
-The first three rows are the main comparison. The last two are a supplementary experiment where I trained the LSTM and Transformer three times longer with the exact same settings. Text Quality is my own judgment from reading the samples.
+The first three rows are the main comparison. The last two are a supplementary experiment where I trained the LSTM and Transformer three times longer with the exact same settings. Text Quality is just my own judgment from reading the samples.
 
 ![Loss curves](figures/loss_curves.png)
 
@@ -221,27 +222,27 @@ And
 
 ## Analysis
 
-### Which model performed best?
+### So, which model actually won?
 
-In the main 5,000 step comparison, the **LSTM** did best with a validation loss of 1.483, ahead of the Transformer (1.571) and way ahead of the bigram (2.484). That surprised me at first. The longer runs changed the picture, though. Trained for 15,000 steps, the LSTM overfit badly and its validation loss climbed back up to 1.580, while the Transformer kept improving and finished at 1.497. So the answer depends on the training budget: the LSTM learns faster at this small scale, but the Transformer holds up better when you keep training.
+In the main 5,000 step run, the LSTM did best with a validation loss of 1.483, ahead of the Transformer (1.571) and way ahead of the bigram (2.484). That actually surprised me at first. But the longer runs changed the picture. At 15,000 steps, the LSTM overfit badly: its validation loss climbed back up to 1.580, while the Transformer kept improving and finished at 1.497. So the answer really depends on your training budget. The LSTM learns faster at this small scale, but the Transformer holds up way better if you keep training.
 
-### Which model trained fastest?
+### Which one was the fastest to train?
 
-The **bigram**, by a mile, at 15.2 seconds. It only has 4,225 parameters. The LSTM took 126.9 seconds and the Transformer 187.4 seconds. The Transformer being slower than the LSTM is probably due in large part to my simple implementation, which computes each attention head separately in a Python loop. With a model this small, the GPU spends a lot of time on overhead rather than actual computation.
+The bigram, by a mile, at 15.2 seconds. It only has 4,225 parameters. The LSTM took 126.9 seconds and the Transformer took 187.4 seconds. The Transformer being slower than the LSTM is probably due in large part to my simple implementation. Computing each attention head separately in a Python loop means the GPU spends a lot of time on overhead rather than actual math.
 
-### Which model generated the most realistic text?
+### Which one wrote the most realistic text?
 
-The bigram's output is mostly gibberish, though it does copy the play format with capitalized names and colons. The LSTM and Transformer are both a huge step up, with mostly real English words, line breaks in the right places, and speaker labels for real Shakespeare characters. Between the two main samples, the LSTM's words are a little cleaner, while the Transformer's sample has the most play-like structure, moving through several short dialogue turns. The 15,000 step samples are the most realistic of all, and some of the Transformer's lines, like "My lord, the common's poor hand.", come pretty close to readable. None of the models actually say anything meaningful, though.
+The bigram's output is mostly gibberish, though it does copy the play format with capitalized names and colons. The LSTM and Transformer are both a huge step up, with mostly real English words, line breaks in the right places, and speaker labels for real Shakespeare characters. Between the two, the LSTM's words are a little cleaner, while the Transformer's sample has the most play-like structure, moving through several short dialogue turns. The 15,000 step samples are the best of all, and some of the Transformer's lines, like "My lord, the common's poor hand.", come pretty close to readable. None of them actually say anything meaningful, though.
 
-### What did the Transformer improve compared to the other models?
+### What did the Transformer actually improve?
 
 The biggest improvement is how it uses context. The LSTM has to carry everything through one hidden state, while the Transformer can look directly at any earlier position. It also overfit much less: its train/val gap stayed around 0.22 to 0.25, while the LSTM's grew from 0.32 to 0.58 with longer training. One caveat is that the Transformer applies dropout in more places than the LSTM, and it also learns more slowly, so part of that difference may not come from the architecture alone.
 
-### Was the improvement worth the added complexity?
+### Was the improvement worth the extra complexity?
 
-At this scale, not by much. With a 1 MB dataset and fewer than a million parameters, the LSTM matched or beat the Transformer at its best checkpoint (1.484 versus 1.497) with a quarter of the training. But the Transformer's advantages, like direct access to any earlier position, resistance to overfitting, and the ability to process all positions in parallel, are exactly the ones that matter more as data and models grow. For a small project like this the LSTM is the practical choice; for anything bigger, the Transformer's extra complexity starts paying for itself.
+At this scale, not by much. With a 1 MB dataset and under a million parameters, the LSTM matched or beat the Transformer at its best checkpoint (1.484 vs 1.497) with a quarter of the training. But the Transformer's advantages, like direct access to any earlier position, resistance to overfitting, and the ability to process all positions in parallel, are exactly the ones that matter more as data and models grow. For a small project like this, the LSTM is the practical choice; for anything bigger, the Transformer's extra complexity starts paying for itself.
 
-### What did I learn about attention?
+### What did I actually learn about attention?
 
 I visualized the attention weights of the Transformer on a line from Romeo and Juliet. The first layer mostly looks at each character itself and its immediate neighbors, which is pretty close to what the bigram does.
 
@@ -257,20 +258,16 @@ I wasn't sure whether Head 2 was tracking where the speech started or was just a
 
 ## What I Learned
 
-This project taught me a lot more than which model wins. Reading the loss curves side by side showed me what overfitting actually looks like, with the training loss falling while the validation loss turns back up. It also showed me how easy it is to draw the wrong conclusion from a single training budget, since the main experiment and the longer runs pointed in different directions. Setting up a fair comparison made me pay attention to details I would have skipped before, like matching model sizes and keeping the settings the same, and even then I found a difference in dropout that I had to point out. Finally, visualizing attention and then testing a hypothesis about one head made the mechanism feel real. Before this, attention was mostly a formula to me. Now I've seen what it actually does.
+This project taught me a lot more than just which model wins. Reading the loss curves side by side showed me what overfitting actually looks like, with the training loss falling while the validation loss turns back up. It also showed me how easy it is to draw the wrong conclusion from a single training budget, since the main experiment and the longer runs pointed in different directions. Setting up a fair comparison made me pay attention to details I would have skipped before, like matching model sizes and keeping the settings the same, and even then I found a difference in dropout that I had to point out. Finally, visualizing attention and then testing a hypothesis about one head made the mechanism feel real. Before this, attention was mostly just a formula to me. Now I've seen what it actually does.
 
 ## Final Reflection
 
 **After comparing bigram, non-transformer, and transformer models, what do you think makes transformers powerful for language modeling?**
 
-Going into this project I assumed the Transformer would just win, and it didn't, at least not right away. With the same 5,000 steps, the LSTM had the lower validation loss and trained faster. That ended up being one of the most useful things I learned, because it made me think harder about where the Transformer's strength actually comes from.
+At first I figured the Transformer would easily crush everything, but in reality, with a small dataset and short training, the LSTM turned out to be a tough opponent. Looking deeper, though, the Transformer's strength isn't that it's better at absolutely everything. It's that it scales.
 
-I think the biggest thing is how it handles context. The bigram sees one character. The LSTM can see everything in principle, but it has to cram all of it into one fixed-size hidden state, and older details get squeezed out. The Transformer doesn't have that bottleneck. Every position can look straight back at any earlier position and decide, based on the content, what's worth paying attention to. The Head 2 experiment showed this really clearly: the model learned on its own to look back at the line where the current speech started, and to switch to the new line when the speaker changed. Nobody programmed that in.
-
-The second thing is that attention is split across several heads and stacked into layers. Each head can specialize, so one tracks the speaker while others work on spelling and word boundaries, and the deeper layers combine all of that into a bigger picture. On top of that, a Transformer processes all positions at the same time during training, which is a big reason it scales so well to huge datasets and modern GPUs. In my small setup that advantage was hidden by implementation overhead, but it matters a lot at real scale.
-
-So is the extra complexity worth it? For a 1 MB dataset and a model under a million parameters, honestly not by much, since the LSTM is a tough baseline here. But the longer training run hinted at the bigger picture: the LSTM started overfitting after about 4,000 steps, while the Transformer kept improving (though some of that may come from the extra dropout it gets). My takeaway is that Transformers aren't powerful because they're better at everything. They're powerful because their way of using context keeps paying off as you give them more data, more training, and longer text, which is exactly the direction language models have gone.
+The bigram can only look one step back. The LSTM has memory, but only a fixed amount of it. The Transformer lets any two positions talk to each other directly. In my experiment, once training ran longer, the LSTM couldn't keep up while the Transformer kept improving. Its design of processing all positions at once also fits modern GPUs really well. So in a tiny 1 MB notebook like this one, the more complex Transformer feels a bit like overkill, but once you get to models trained on billions of words, that's where the architecture really shines. That's why today's language models have all gone the Transformer route.
 
 ## Responsible AI Use
 
-See [ai_use_summary.md](ai_use_summary.md) for details.
+I used Claude as a tutor and coding assistant, reran every experiment myself, and rebuilt all the core components on my own in `aai6620_practice_reimplementation.ipynb`. See [ai_use_summary.md](ai_use_summary.md) for the full details.
